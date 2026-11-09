@@ -1,0 +1,7 @@
+# unfoldingWord sites scored by the GEO dashboard. One per line.
+translationcore.com
+openbiblestories.org
+unfoldingword.org
+btservant.ai
+door43.org
+git.door43.org
