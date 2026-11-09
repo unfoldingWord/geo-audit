@@ -1,0 +1,53 @@
+# Copy to .github/workflows/geo-audit.yml in the repo that holds
+# geo_audit_all.py and sites.txt (repo root). Run it from the Actions tab
+# ("Run workflow"). Results are committed to results/.
+name: GEO audit
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "17 6 1 * *"   # optional: 06:17 UTC on the 1st of each month
+
+permissions:
+  contents: write
+
+concurrency:
+  group: geo-audit
+  cancel-in-progress: false
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v6
+
+      - name: Run audits
+        run: python3 geo_audit_all.py --sites sites.txt --out results
+
+      - name: Show summary
+        run: |
+          python3 - <<'PY'
+          import json
+          rows = json.load(open("results/geo-latest.json"))
+          lines = ["| Site | Score | Target 90 |", "|---|---|---|"]
+          for r in rows:
+              s = r["score"] if r["error"] is None else "error: " + r["error"]
+              lines.append(f"| {r['site']} | {s} | {'yes' if r['meets_target'] else 'no'} |")
+          open(__import__('os').environ["GITHUB_STEP_SUMMARY"], "a").write("\n".join(lines) + "\n")
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: geo-results
+          path: results/
+
+      - name: Commit results
+        run: |
+          git config user.name "geo-audit-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add results/
+          git diff --cached --quiet || git commit -m "GEO audit $(date -u +%Y-%m-%d)"
+          git push
