@@ -5,3 +5,4 @@ unfoldingword.org
 btservant.ai
 door43.org
 git.door43.org
+servant.bible
